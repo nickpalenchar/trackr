@@ -3,8 +3,11 @@
 Trackr.
 
 Usage:
-    trackr start <task>
+    trackr add <task>
+    trackr start <task> [-a]
     trackr stop
+    trackr tasks
+    trackr report
 """
 
 import csv
@@ -53,6 +56,21 @@ class Commands:
             print(f'Task {task_stopped} stopped')
         else:
             print()
+
+    @staticmethod
+    def report():
+        """Get a weekly report of how much time has been spent and where"""
+        raise NotImplementedError
+
+    @staticmethod
+    def tasks():
+        """list all known tasks"""
+        raise NotImplementedError
+
+    @staticmethod
+    def add(task):
+        """Register a new task"""
+        raise NotImplementedError
 
 
 def stop_current_task():
