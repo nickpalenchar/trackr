@@ -7,6 +7,7 @@ Usage:
     trackr start <task> [-a]
     trackr stop
     trackr tasks
+    trackr current
     trackr report
 """
 
@@ -20,18 +21,31 @@ from docopt import docopt
 # datetime.fromisoformat()
 
 CONFIG_PATH = f'{os.environ.get("HOME")}/trackr'
-CONFIG_FILE = 'time.csv'
-CONFIG_FULL_PATH = path.join(CONFIG_PATH, CONFIG_FILE)
-CURRENT_TASK_FULL_PATH = path.join(CONFIG_PATH, 'current.csv')
+LOG_FILENAME = 'time.csv'
+LOG_FILEPATH = path.join(CONFIG_PATH, LOG_FILENAME)
+CURRENT_TASK_FILEPATH = path.join(CONFIG_PATH, 'current.csv')
+TASKS_FILEPATH = path.join(CONFIG_PATH, 'tasks.txt')
 FIELDNAMES = ['task', 'begin', 'end']
 
 
-def create_file_if_needed(config_path=CONFIG_PATH, config_file=CONFIG_FILE):
+def create_file_if_needed(config_path=CONFIG_PATH, config_file=LOG_FILENAME):
+    _create_log_file_if_needed(config_path, config_file)
+    _create_tasks_file_if_needed(TASKS_FILEPATH)
+
+
+def _create_log_file_if_needed(config_path, config_file):
     if not path.exists(path.join(config_path, config_file)):
         os.mkdir(CONFIG_PATH)
-        with open(path.join(CONFIG_PATH, CONFIG_FILE), 'a', newline='') as csvfile:
+        with open(path.join(CONFIG_PATH, LOG_FILENAME), 'a', newline='') as csvfile:
             writer = csv.writer(csvfile)
             writer.writerow(FIELDNAMES)
+
+
+def _create_tasks_file_if_needed(tasks_filepath):
+    if not path.exists(tasks_filepath):
+        print('ADDINGG')
+        open(tasks_filepath, 'a').close()
+
 
 class Commands:
     """
@@ -39,12 +53,16 @@ class Commands:
     """
 
     @staticmethod
-    def start(task):
+    def start(task, a=False):
         """Begin working on a task, ending a task in progress, if any."""
+        if task not in get_all_tasks() and a is False:
+            print(f'Sorry: {task} is not in tasklist. Try with -a or `trackr add <task>`')
+            return
+        _add_task_to_tasklist(task)
         stopped_task = stop_current_task()
         if stopped_task:
             print(f'Note: Stopped current task {stopped_task}')
-        with CSVHandler(CURRENT_TASK_FULL_PATH, FIELDNAMES, 'a') as writer:
+        with CSVHandler(CURRENT_TASK_FILEPATH, FIELDNAMES, 'a') as writer:
             writer.writeheader()
             writer.writerow({'task': task, 'begin': str(datetime.utcnow())})
         print(f'Task {task} started.')
@@ -55,7 +73,7 @@ class Commands:
         if task_stopped:
             print(f'Task {task_stopped} stopped')
         else:
-            print()
+            print('No task to stop.')
 
     @staticmethod
     def report():
@@ -65,12 +83,30 @@ class Commands:
     @staticmethod
     def tasks():
         """list all known tasks"""
-        raise NotImplementedError
+        print(get_all_tasks())
+        for task in filter(bool, get_all_tasks()):
+            print(task)
 
     @staticmethod
     def add(task):
         """Register a new task"""
+        if task in get_all_tasks():
+            print(f'Task {task} is already in the tasklist')
+        else:
+            _add_task_to_tasklist(task)
+            print(f'Task {task} added to tasklist.')
+
+    @staticmethod
+    def current():
+        """Report the current task"""
         raise NotImplementedError
+
+
+def _add_task_to_tasklist(task):
+    if task in get_all_tasks():
+        return None
+    with open(TASKS_FILEPATH, 'a') as fh:
+        fh.writelines(['\n', task])
 
 
 def stop_current_task():
@@ -82,19 +118,23 @@ def stop_current_task():
     if task_current is None:
         return None
     task_current['end'] = str(datetime.utcnow())
-    with CSVHandler(CONFIG_FULL_PATH, FIELDNAMES) as writer:
+    with CSVHandler(LOG_FILEPATH, FIELDNAMES) as writer:
         writer.writerow(task_current)
-    os.unlink(CURRENT_TASK_FULL_PATH)
+    os.unlink(CURRENT_TASK_FILEPATH)
     return task_current['task']
-
 
 
 def get_task_current():
     """Returns the current task as an ordered dict, or None if none exists"""
-    if not os.path.exists(CURRENT_TASK_FULL_PATH):
+    if not os.path.exists(CURRENT_TASK_FILEPATH):
         return None
-    with CSVHandler(path.join(CURRENT_TASK_FULL_PATH), mode='r') as ch:
+    with CSVHandler(path.join(CURRENT_TASK_FILEPATH), mode='r') as ch:
         return list(ch)[0]
+
+
+def get_all_tasks():
+    with open(TASKS_FILEPATH, 'r') as fh:
+        return [line.rstrip() for line in fh.readlines()]
 
 
 def main():
