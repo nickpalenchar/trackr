@@ -4,19 +4,23 @@ Trackr.
 
 Usage:
     trackr add <task>
-    trackr start <task> [-a]
+    trackr start [-a] <task>
     trackr stop
     trackr tasks
     trackr current
-    trackr report
+    trackr report [(--day|--week|--month)]
+
+Options
+    -a      When used with `trackr start`, also adds task name to tasklist if it doesn't exist
 """
 
 import csv
 import os
 from os import path
-from datetime import datetime
+from datetime import datetime, timedelta
 from .csvhandler import CSVHandler
 from docopt import docopt
+from dateutil import tz
 # str( datetime.utcnow() )
 # datetime.fromisoformat()
 
@@ -58,7 +62,8 @@ class Commands:
         if task not in get_all_tasks() and a is False:
             print(f'Sorry: {task} is not in tasklist. Try with -a or `trackr add <task>`')
             return
-        _add_task_to_tasklist(task)
+        if _add_task_to_tasklist(task):
+            print(f'Note: creating new task {task}')
         stopped_task = stop_current_task()
         if stopped_task:
             print(f'Note: Stopped current task {stopped_task}')
@@ -76,8 +81,9 @@ class Commands:
             print('No task to stop.')
 
     @staticmethod
-    def report():
+    def report(week=0):
         """Get a weekly report of how much time has been spent and where"""
+
         raise NotImplementedError
 
     @staticmethod
@@ -101,12 +107,43 @@ class Commands:
         """Report the current task"""
         raise NotImplementedError
 
+    @staticmethod
+    def report(week=0):
+        week_offset = abs(int(week))
+        end_time = datetime.now(tz.tzlocal())
+        start_of_week = end_time  - timedelta(days=end_time .weekday()) - timedelta(days=(7 * week_offset))
+        start_time = start_of_week.replace(hour=0, minute=0, second=0)
+
+        with CSVHandler(LOG_FILEPATH, FIELDNAMES, 'r') as ch:
+            # breakpoint()
+            print('hello')
+            tasks_to_report = []
+            filelines = [line for line in ch.reader]
+            for task, begin, end in filelines[1:]:
+                begin_time = convert_to_local(begin)
+                if begin_time > start_time and begin_time < end_time:
+                    tasks_to_report.append((task, begin, end))
+
+            print(len(tasks_to_report))
+
+
+def convert_to_local(date: datetime, local=None):
+    if local is None:
+        local = tz.tzlocal()
+
+    if type(date) is str:
+        date = datetime.fromisoformat(date)
+
+    utc = date.replace(tzinfo=tz.tzutc())
+    return utc.astimezone(local)
+
 
 def _add_task_to_tasklist(task):
     if task in get_all_tasks():
         return None
     with open(TASKS_FILEPATH, 'a') as fh:
         fh.writelines(['\n', task])
+        return task
 
 
 def stop_current_task():
@@ -137,6 +174,13 @@ def get_all_tasks():
         return [line.rstrip() for line in fh.readlines()]
 
 
+def convert_flag(string):
+    """converts flag to python-style kwarg, removing leading dashesh, and replacing other ones with _"""
+    while string[0] == '-':
+        string = string[1:]
+
+    return string.replace('-', '_')
+
 def main():
     """
     Invoke trackr.
@@ -145,8 +189,12 @@ def main():
     """
     create_file_if_needed()
     args = docopt(__doc__)
+    # breakpoint()
     command = [key for key, value in args.items() if not key.startswith('<') and value is True][0]
-    parsedargs = {key.strip('<>'): val for key, val in args.items() if key.startswith('<') and val is not None}
+    parsedargs = {
+        **{key.strip('<>'): val for key, val in args.items() if key.startswith('<') and val is not None},
+        **{convert_flag(key): val for key, val in args.items() if key.startswith('-') and val is not False}
+    }
     getattr(Commands, command)(**parsedargs)
 
 
