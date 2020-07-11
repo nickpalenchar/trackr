@@ -22,6 +22,7 @@ from .csvhandler import CSVHandler
 from .report import Report
 from docopt import docopt
 from dateutil import tz
+from typing import List, Tuple
 # str( datetime.utcnow() )
 # datetime.fromisoformat()
 
@@ -106,24 +107,23 @@ class Commands:
     @staticmethod
     def report(week=0):
         week_offset = abs(int(week))
-        end_time = datetime.now(tz.tzlocal())
-        start_of_week = end_time  - timedelta(days=end_time .weekday()) - timedelta(days=(7 * week_offset))
-        start_time = start_of_week.replace(hour=0, minute=0, second=0)
+        end_time_window = datetime.now(tz.tzlocal())
+        start_of_week = end_time_window - timedelta(days=end_time_window .weekday()) - timedelta(days=(7 * week_offset))
+        start_time_window: datetime = start_of_week.replace(hour=0, minute=0, second=0)
 
         with CSVHandler(LOG_FILEPATH, FIELDNAMES, 'r') as ch:
             # breakpoint()
             print('hello')
-            tasks_to_report = []
-            filelines = [line for line in ch.reader]
+            tasks_to_report: List[Tuple[str, datetime, datetime]] = []
+            filelines: List[List[str]] = [line for line in ch.reader]
             for task, begin, end in filelines[1:]:
-                begin_time = convert_to_local(begin)
-                if begin_time > start_time and begin_time < end_time:
-                    tasks_to_report.append((task, begin, end))
+                task_begin_time, task_end_time = convert_to_local(begin), convert_to_local(end)
+                if start_time_window < task_begin_time < end_time_window:
+                    tasks_to_report.append((task, task_begin_time, task_end_time))
 
             print(len(tasks_to_report))
             report = Report(*tasks_to_report)
             report.show_report()
-
 
 
 def convert_to_local(date: datetime, local=None):
