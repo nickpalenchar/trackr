@@ -19,6 +19,7 @@ import os
 from os import path
 from datetime import datetime, timedelta
 from .csvhandler import CSVHandler
+from .report import Report
 from docopt import docopt
 from dateutil import tz
 # str( datetime.utcnow() )
@@ -80,11 +81,6 @@ class Commands:
         else:
             print('No task to stop.')
 
-    @staticmethod
-    def report(week=0):
-        """Get a weekly report of how much time has been spent and where"""
-
-        raise NotImplementedError
 
     @staticmethod
     def tasks():
@@ -125,6 +121,9 @@ class Commands:
                     tasks_to_report.append((task, begin, end))
 
             print(len(tasks_to_report))
+            report = Report(*tasks_to_report)
+            report.show_report()
+
 
 
 def convert_to_local(date: datetime, local=None):
