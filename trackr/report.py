@@ -4,6 +4,8 @@ from collections import namedtuple
 
 # Entry = namedtuple('Entry', ('time', 'percent'))
 
+WEEKDAY_LETTERS = ('Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su')
+
 class Entry:
 
     def __init__(self, time, percent):
@@ -55,13 +57,26 @@ class CollectiveTasks:
         return ' '.join(result)
 
     @staticmethod
-    def reportheader(header: List[str] = None, cell_width=CELL_WIDTH) -> str:
-        return f'|{"|".join([name.center(cell_width) for name in header])}|'
+    def reportheader(header: List[str] = None, cell_width=CELL_WIDTH, offset=1) -> str:
+        """
+        Return the header, which should use the same header as all calls to reportrow. This will create a table
+        where all values line up with a certain column.
+
+        Assumes the first column will be titles (rather than values), and prints a blank cell first. To start
+        printing columns with header values immediately, set offest to 0
+
+        :param offset: Number of blank columns to print before printing header values. Default 1
+        """
+
+        header_fmt =  f'|{"|".join([name.center(cell_width) for name in ([""] * offset) + list(header)])}|'
+        footer_fmt = f'+{"+".join(["".center(cell_width, "-") for _ in range(len(header) + offset)])}+'
+
+        return f'{header_fmt}\n{footer_fmt}'
 
     def reportrow(self, header: List[str] = None, cell_width=CELL_WIDTH) -> str:
         if header is None:
             header = self.tasks.keys()
-        result = []
+        result = [self.title.center(cell_width)] if self.title else []
         for task in header:
             if task not in self.tasks:
                 result.append(''.center(cell_width))
@@ -88,17 +103,18 @@ class Report:
 
         task_header = set()
         current_date = self.rows[0][1]
-        day_tasks = CollectiveTasks()
+        day_tasks = None
         for task, start, end in self.rows:
+            if day_tasks is None:
+                day_tasks = CollectiveTasks(f'{WEEKDAY_LETTERS[start.weekday()]} {start.month}/{start.day}')
             task_header.add(task)
             # TODO: this does not account for the edge case of a task that spans 2+ days
             if start.day != current_date.day:
                 result.append(day_tasks)
                 # breakpoint()
-                day_tasks = CollectiveTasks()
+                day_tasks = CollectiveTasks(f'{WEEKDAY_LETTERS[start.weekday()]} {start.month}/{start.day}')
                 current_date = start
             task_length = end - start
-            print('header>> ', task_header)
             day_tasks[task] = day_tasks[task].time + task_length if task in day_tasks else task_length
 
         result.append(day_tasks)
