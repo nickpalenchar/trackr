@@ -23,8 +23,6 @@ from .report import Report
 from docopt import docopt
 from dateutil import tz
 from typing import List, Tuple
-# str( datetime.utcnow() )
-# datetime.fromisoformat()
 
 CONFIG_PATH = f'{os.environ.get("HOME")}/trackr'
 LOG_FILENAME = 'time.csv'
@@ -85,7 +83,6 @@ class Commands:
     @staticmethod
     def tasks():
         """list all known tasks"""
-        print(get_all_tasks())
         for task in filter(bool, get_all_tasks()):
             print(task)
 
