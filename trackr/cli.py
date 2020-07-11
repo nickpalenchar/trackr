@@ -49,7 +49,6 @@ def _create_log_file_if_needed(config_path, config_file):
 
 def _create_tasks_file_if_needed(tasks_filepath):
     if not path.exists(tasks_filepath):
-        print('ADDINGG')
         open(tasks_filepath, 'a').close()
 
 
@@ -113,7 +112,6 @@ class Commands:
 
         with CSVHandler(LOG_FILEPATH, FIELDNAMES, 'r') as ch:
             # breakpoint()
-            print('hello')
             tasks_to_report: List[Tuple[str, datetime, datetime]] = []
             filelines: List[List[str]] = [line for line in ch.reader]
             for task, begin, end in filelines[1:]:
@@ -121,7 +119,6 @@ class Commands:
                 if start_time_window < task_begin_time < end_time_window:
                     tasks_to_report.append((task, task_begin_time, task_end_time))
 
-            print(len(tasks_to_report))
             report = Report(*tasks_to_report)
             report.show_report()
 

@@ -11,7 +11,6 @@ with open('requirements.txt') as f:
 with open(join(this_dir, 'README.md'), encoding='utf-8') as file:
     long_description = file.read()
 
-print('P>>>>>', find_packages)
 
 setup(
     name='trackr',
