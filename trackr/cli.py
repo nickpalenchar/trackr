@@ -22,7 +22,7 @@ from .csvhandler import CSVHandler
 from .report import Report
 from docopt import docopt
 from dateutil import tz
-from typing import List, Tuple
+from typing import List, Tuple, Union
 
 CONFIG_PATH = f'{os.environ.get("HOME")}/trackr'
 LOG_FILENAME = 'time.csv'
@@ -79,7 +79,6 @@ class Commands:
         else:
             print('No task to stop.')
 
-
     @staticmethod
     def tasks():
         """list all known tasks"""
@@ -120,7 +119,7 @@ class Commands:
             report.show_report()
 
 
-def convert_to_local(date: datetime, local=None):
+def convert_to_local(date: Union[datetime, str], local=None):
     if local is None:
         local = tz.tzlocal()
 
@@ -173,6 +172,7 @@ def convert_flag(string):
         string = string[1:]
 
     return string.replace('-', '_')
+
 
 def main():
     """

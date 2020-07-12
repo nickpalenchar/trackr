@@ -1,6 +1,6 @@
-from typing import List
+from typing import List, Iterable, Set, Union
 from datetime import datetime, timedelta
-from collections import namedtuple
+from collections import namedtuple, defaultdict
 
 # Entry = namedtuple('Entry', ('time', 'percent'))
 
@@ -14,7 +14,10 @@ class Entry:
 
     @property
     def percent(self):
-        return int((self._percent * 100) // 1)
+        value = str(int((self._percent * 100) // 1))
+        if value == '0':
+            value = '<1'
+        return value
 
 class CollectiveTasks:
 
@@ -73,7 +76,7 @@ class CollectiveTasks:
 
         return f'{header_fmt}\n{footer_fmt}'
 
-    def reportrow(self, header: List[str] = None, cell_width=CELL_WIDTH) -> str:
+    def reportrow(self, header: Iterable[str] = None, cell_width=CELL_WIDTH) -> str:
         if header is None:
             header = self.tasks.keys()
         result = [self.title.center(cell_width)] if self.title else []
@@ -83,6 +86,18 @@ class CollectiveTasks:
             else:
                 result.append(f'{self[task].percent}%'.center(cell_width))
         return f'|{"|".join(result)}|'
+
+    def reporttotals(self, header: Union[List[str], Set[str]], cell_width=CELL_WIDTH, offset=1, bottom_boarder=True) -> str:
+        """
+        Arranges totals a row divided by cells. Intended to be added to the bottom of a report where at least
+        reportheaders has been called (probably followed by reportrow), because reporttotals will not print the
+        task names from the passed headers itself
+        """
+        # breakpoint()
+        totals = f"|{self.title.center(cell_width)}" if self.title else ''
+        totals += f"{'|'.join(([''] * offset) + [(str(self[task].percent) + '%').center(cell_width)for task in header])}|"
+        totals += f"\n+{'+'.join([''.center(cell_width, '-') for _ in range(len(header) + offset)])}|" if bottom_boarder else ''
+        return totals
 
 
 class Report:
@@ -104,6 +119,7 @@ class Report:
         task_header = set()
         current_date = self.rows[0][1]
         day_tasks = None
+        total_task_times = CollectiveTasks('TOTAL')
         for task, start, end in self.rows:
             if day_tasks is None:
                 day_tasks = CollectiveTasks(f'{WEEKDAY_LETTERS[start.weekday()]} {start.month}/{start.day}')
@@ -115,12 +131,15 @@ class Report:
                 day_tasks = CollectiveTasks(f'{WEEKDAY_LETTERS[start.weekday()]} {start.month}/{start.day}')
                 current_date = start
             task_length = end - start
+
+            # If a task has some time logged, add to it. Else add the task and set time logged to current time spent.
             day_tasks[task] = day_tasks[task].time + task_length if task in day_tasks else task_length
+            total_task_times[task] = total_task_times[task].time + task_length if task in total_task_times else task_length
 
         result.append(day_tasks)
         print(CollectiveTasks.reportheader(task_header))
         print('\n'.join([r.reportrow(task_header) for r in result]))
-
+        print(total_task_times.reporttotals(task_header))
 
 
 
