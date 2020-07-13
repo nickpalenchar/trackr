@@ -8,10 +8,11 @@ Usage:
     trackr stop
     trackr tasks
     trackr current
-    trackr report [(--day|--week|--month)]
+    trackr report [--week=<offset>]
 
 Options
     -a      When used with `trackr start`, also adds task name to tasklist if it doesn't exist
+    --week=<offset>   Report on just the current day, or pass a negative number for a previous day [default: 0]
 """
 
 import csv
