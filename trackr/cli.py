@@ -57,7 +57,7 @@ class Commands:
     """
 
     @staticmethod
-    def start(task, a=False):
+    def start(task, a=False, **_):
         """Begin working on a task, ending a task in progress, if any."""
         if task not in get_all_tasks() and a is False:
             print(f'Sorry: {task} is not in tasklist. Try with -a or `trackr add <task>`')
@@ -73,7 +73,7 @@ class Commands:
         print(f'Task {task} started.')
 
     @staticmethod
-    def stop():
+    def stop(**_):
         task_stopped = stop_current_task()
         if task_stopped:
             print(f'Task {task_stopped} stopped')
@@ -81,13 +81,13 @@ class Commands:
             print('No task to stop.')
 
     @staticmethod
-    def tasks():
+    def tasks(**_):
         """list all known tasks"""
         for task in filter(bool, get_all_tasks()):
             print(task)
 
     @staticmethod
-    def add(task):
+    def add(task, **_):
         """Register a new task"""
         if task in get_all_tasks():
             print(f'Task {task} is already in the tasklist')
@@ -96,12 +96,12 @@ class Commands:
             print(f'Task {task} added to tasklist.')
 
     @staticmethod
-    def current():
+    def current(**_):
         """Report the current task"""
         raise NotImplementedError
 
     @staticmethod
-    def report(week=0):
+    def report(week=0, **_):
         week_offset = abs(int(week))
         end_time_window = datetime.now(tz.tzlocal())
         start_of_week = end_time_window - timedelta(days=end_time_window .weekday()) - timedelta(days=(7 * week_offset))
